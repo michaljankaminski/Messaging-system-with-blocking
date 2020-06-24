@@ -2,6 +2,7 @@
 using EdcsServer.Model;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
@@ -80,27 +81,48 @@ namespace EdcsServer.Service
                 var replyProps = _channel.CreateBasicProperties();
                 replyProps.CorrelationId = props.CorrelationId;
                 replyProps.Timestamp = ea.BasicProperties.Timestamp;
-
+                Console.WriteLine("Received msg");
                 try
                 {
                     var msg = _modelHelper.DeserializeJson<Message>(Encoding.UTF8.GetString(body));
                     if(_dbService.SaveMessage(msg))
                     {
                         // TODO: loggowanie wiadomości
-                        Console.WriteLine("Zapisałem");
+                        response = _modelHelper.SerializeJson(new Response
+                        {
+                            StatusCode = 200,
+                            Message = "Message was saved to db."
+                        });
+                        Console.WriteLine("Message saved");
+
                     }
                     else
                     {
-                        Console.WriteLine("Nie zapisałem");
+                        response = _modelHelper.SerializeJson(new Response
+                        {
+                            StatusCode = 501,
+                            Message = "Message was not saved to db."
+                        });
+                        Console.WriteLine("Message not saved");
                     }
                 }
                 catch(ArgumentNullException ex)
                 {
-                    // pusta wiadomość
+                    response = _modelHelper.SerializeJson(new Response
+                    {
+                        StatusCode = 502,
+                        Message = "Message was not saved to db"
+                    });
+                    Console.WriteLine("Exc: Message saved");
                 }
                 catch (Exception ex)
                 {
-
+                    response = _modelHelper.SerializeJson(new Response
+                    {
+                        StatusCode = 502,
+                        Message = "Message was not saved to db"
+                    });
+                    Console.WriteLine("Exc: Message saved");
                 }
                 finally
                 {
