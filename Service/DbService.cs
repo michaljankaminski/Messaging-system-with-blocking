@@ -58,8 +58,12 @@ namespace EdcsServer.Service
                     cmd.Parameters.AddWithValue("sender", message.Sender);
                     cmd.Parameters.AddWithValue("receiver", message.Receiver);
 
-                    string thread = (string)cmd.ExecuteScalar();
-                    threadId = Convert.ToInt32(thread);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.HasRows)
+                            while (reader.Read())
+                                threadId = reader.GetInt32(0);
+                    }
                 }
 
                 if (threadId == 0)
@@ -72,7 +76,6 @@ namespace EdcsServer.Service
                         threadId = (int)cmd.ExecuteScalar();
                     }
                 }
-
                 using (var cmd = new NpgsqlCommand(insertMessage, conn))
                 {
                     cmd.Parameters.AddWithValue("thread", threadId);
@@ -80,11 +83,12 @@ namespace EdcsServer.Service
                     cmd.Parameters.AddWithValue("content", message.Content);
 
                     var result = cmd.ExecuteNonQuery();
+                    if (result > 0)
+                        return true;
+                    else
+                        return false;
                 }
-
             }
-
-            return false;
         }
     }
 }
