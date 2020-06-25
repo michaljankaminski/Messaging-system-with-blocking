@@ -8,6 +8,7 @@ using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace EdcsServer.Service
 {
@@ -52,23 +53,59 @@ namespace EdcsServer.Service
 
             StartListening();
         }
-        private void QueueDeclare()
+        private void ExchangeDeclare()
         {
-            _channel.QueueDeclare(
-               queue: QueueName,
-               durable: false,
-               exclusive: false,
-               autoDelete: false,
-               arguments: null);
-            _channel.BasicQos(0, 1, false);
-        }
+            _channel.
+                ExchangeDeclare(
+                exchange: "logs",
+                type: ExchangeType.Direct);
 
+            _channel.
+                ExchangeDeclare(
+                exchange: "users",
+                type: ExchangeType.Topic);
+        }
+        private string QueueDeclare()
+        {
+            var queueName = _channel.QueueDeclare().QueueName;
+            _channel.QueueBind(
+                queue: queueName,
+                exchange: "logs",
+                routingKey: "MsgLogs");
+
+            return queueName;
+        }
+        private void UserQueueDeclare()
+        {
+            var users = _dbService.GetUsersIds();
+
+            if (users.Count() > 0)
+            {
+                Console.WriteLine("Rejestruję kolejki użytkowników");
+                foreach (var user in users)
+                {
+                    string routingKey = String.Format("user.{0}", user);
+                    string queueName = String.Format("user-{0}", user);
+
+                    _channel.QueueDeclare(queue: queueName);
+                    _channel.QueueBind(
+                        queue: queueName,
+                        exchange: "users",
+                        routingKey: routingKey);
+                }
+            }
+            else
+                Console.WriteLine("Brak użytkowników");
+        }
         public void StartListening()
         {
-            QueueDeclare();
+            ExchangeDeclare();
+            var qName = QueueDeclare();
+            UserQueueDeclare();
+
             var consumer = new EventingBasicConsumer(_channel);
             _channel.BasicConsume(
-                queue: QueueName,
+                queue: qName,
                 autoAck: false,
                 consumer: consumer);
 
@@ -85,7 +122,7 @@ namespace EdcsServer.Service
                 try
                 {
                     var msg = _modelHelper.DeserializeJson<Message>(Encoding.UTF8.GetString(body));
-                    if(_dbService.SaveMessage(msg))
+                    if (_dbService.SaveMessage(msg))
                     {
                         // TODO: loggowanie wiadomości
                         response = _modelHelper.SerializeJson(new Response
@@ -106,7 +143,7 @@ namespace EdcsServer.Service
                         Console.WriteLine("Message not saved");
                     }
                 }
-                catch(ArgumentNullException ex)
+                catch (ArgumentNullException ex)
                 {
                     response = _modelHelper.SerializeJson(new Response
                     {
