@@ -2,10 +2,13 @@
 using EdcsClient.Service;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Configuration;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -40,7 +43,7 @@ namespace EdcsClient
         private void ConfigureServices(IServiceCollection services)
         {
             services.Configure<Settings>(Configuration.GetSection(nameof(Settings)));
-
+            services.AddScoped<IDbService, DbService>();
             services.AddSingleton<IRabbitService, RabbitService>();
             services.AddTransient(typeof(MainWindow));
         }
