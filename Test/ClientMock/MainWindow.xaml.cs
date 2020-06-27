@@ -19,6 +19,10 @@ using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using EdcsClient.Model;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Options;
+using System.ComponentModel;
+using System.Threading;
+using System.Collections.ObjectModel;
 
 namespace EdcsClient
 {
@@ -27,20 +31,86 @@ namespace EdcsClient
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly IRabbitService _rabbit;
-        public MainWindow(IRabbitService rabbit)
-        { 
-            InitializeComponent();
-            _rabbit = rabbit;
-            
-        }
+        private readonly BackgroundWorker _worker = new BackgroundWorker();
 
+        private static User CurrentUser;
+        private static ObservableCollection<Message> CurrentThread;
+        private static IEnumerable<User> Contacts;
+
+        private readonly IRabbitService _rabbit;
+        private readonly IDbService _context;
+        private readonly IOptions<Settings> _config;
+        public MainWindow(IRabbitService rabbit, IDbService dbService,
+                IOptions<Settings> config)
+        {
+            _rabbit = rabbit;
+            _context = dbService;
+            _config = config;
+
+            InitializeComponent();
+            InitializeUser();
+            InitializeUi();
+
+            _worker.DoWork += ListenQueue;
+            _worker.RunWorkerAsync();
+        }
+        private void InitializeUi()
+        {
+            Contacts = _context.GetUsers(CurrentUser.Id);
+            contactsList.ItemsSource = Contacts;
+        }
+        private void InitializeUser()
+        {
+            CurrentUser = new User
+            {
+                Id = _config.Value.User.Id,
+                Name = _config.Value.User.Name,
+                IsActive = true,
+                Password = _config.Value.User.Password
+            };
+        }
+        private void ReloadThreadView()
+        {
+            messagesListView.ItemsSource = null;
+            messagesListView.ItemsSource = CurrentThread;
+        }
+        private void ChangeThreadEvent(object sender, RoutedEventArgs e)
+        {
+            var user = (User)(sender as ListView).SelectedItem;
+            CurrentThread = _context.GetThread(CurrentUser.Id, user.Id);
+            ReloadThreadView();
+        }
+        private void ListenQueue(object sender, DoWorkEventArgs e)
+        {
+            BackgroundWorker wk = (BackgroundWorker)sender;
+            while(!wk.CancellationPending)
+            {
+                var msg = _rabbit.GetLastMessage();
+                if (msg != null)
+                {
+                    if(CurrentThread != null && 
+                        CurrentThread.FirstOrDefault() != null)
+                    {
+                        var ct = CurrentThread.First();
+                        if((ct.Sender == msg.Sender && ct.Receiver == msg.Receiver) ||
+                           (ct.Sender == msg.Receiver && ct.Receiver == msg.Sender))
+                        {
+                            Dispatcher.Invoke(() =>
+                            {
+                                CurrentThread.Add(msg);
+                            });
+                        }
+                    }
+                }
+                Thread.Sleep(1000);
+            }
+        }
         private void SendMessageEvent(object sender, RoutedEventArgs e)
         {
-
-            var msg = new Message {
-                Content = "Testowa wiadomość",
-                Sender = 1,
+            var msg = new Message
+            {
+                Content = messageBox.Text,
+                Sender = CurrentUser.Id,
                 Receiver = 2
             };
             _rabbit.LogMessage(msg);
