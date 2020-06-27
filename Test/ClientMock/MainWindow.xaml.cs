@@ -111,10 +111,13 @@ namespace EdcsClient
             {
                 Content = messageBox.Text,
                 Sender = CurrentUser.Id,
-                Receiver = 2
+                Receiver = 2,
+                CurrentUser = true,
+                Created = DateTime.Now,
+                Modified = DateTime.Now
             };
             _rabbit.LogMessage(msg);
-
+            CurrentThread.Add(msg);
         }
     }
 }
