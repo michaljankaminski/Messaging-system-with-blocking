@@ -83,7 +83,7 @@ namespace EdcsClient.Service
                     var msgList = new ObservableCollection<Message>();
                     string getMessages = @"SELECT * FROM message 
                                             WHERE id_thread = @thread 
-                                            ORDER BY created DESC";
+                                            ORDER BY created ASC";
 
                     using (var cmd = new NpgsqlCommand(getMessages, conn))
                     {
@@ -100,7 +100,8 @@ namespace EdcsClient.Service
                                         Created = reader.GetDateTime(4),
                                         Modified = reader.GetDateTime(5),
                                         Sender = reader.GetInt32(2),
-                                        Receiver = from == reader.GetInt32(2) ? to : from
+                                        Receiver = from == reader.GetInt32(2) ? to : from,
+                                        CurrentUser = from == reader.GetInt32(2) ? true : false
                                     });
                         }
                     }
