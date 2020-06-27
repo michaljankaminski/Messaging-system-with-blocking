@@ -87,7 +87,10 @@ namespace EdcsServer.Service
                     string routingKey = String.Format("user.{0}", user);
                     string queueName = String.Format("user-{0}", user);
 
-                    _channel.QueueDeclare(queue: queueName);
+                    _channel.QueueDeclare(
+                        queue: queueName, 
+                        exclusive: false, 
+                        autoDelete: false);
                     _channel.QueueBind(
                         queue: queueName,
                         exchange: "users",
