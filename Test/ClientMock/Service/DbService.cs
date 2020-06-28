@@ -7,14 +7,27 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
 
+namespace EdcsClient.Model.Enum
+{
+    public enum BanStatus
+    {
+        OUT,
+        IN,
+        NONE
+    }
+}
+
 namespace EdcsClient.Service
 {
     public interface IDbService
     {
+        public EdcsClient.Model.Enum.BanStatus VerifyBan(int sender, int receiver);
         public User GetUser(string login, string password);
         public IEnumerable<User> GetUsers(int userId);
         public ObservableCollection<Message> GetThread(int from, int to);
         public IList<Message> GetThread(int threadId);
+        public bool UpdateBan(int sender, int receiver);
+
     }
     public class DbService : IDbService
     {
@@ -138,6 +151,88 @@ namespace EdcsClient.Service
         public IList<Message> GetThread(int threadId)
         {
             throw new NotImplementedException();
+        }
+        /// <summary>
+        /// Weryfikowanie banów użytkowników. Wyróżniamy trzy typy 
+        /// IN: Kiedy to ktoś nałożył bana na nas
+        /// OUT: Kiedy to my kogoś zbanowaliśmy
+        /// NONE: nie ma żadnego bana między użytkownikami
+        /// </summary>
+        /// <param name="sender">id</param>
+        /// <param name="receiver">id</param>
+        /// <returns></returns>
+        public EdcsClient.Model.Enum.BanStatus VerifyBan(int sender, int receiver)
+        {
+            using (var conn = new NpgsqlConnection(_connString))
+            {
+                conn.Open();
+                var getBan = @"SELECT * FROM public.ban 
+                                WHERE (user_id = @from AND ban_user_id = @to) OR 
+                                        (user_id = @to AND ban_user_id = @from)";
+
+                using (var cmd = new NpgsqlCommand(getBan, conn))
+                {
+                    cmd.Parameters.AddWithValue("from", sender);
+                    cmd.Parameters.AddWithValue("to", receiver);
+
+                    var row = cmd.ExecuteReader();
+                    if (row.HasRows)
+                    {
+                        while (row.Read())
+                        {
+                            if (row.GetInt32(0) == sender)
+                                return EdcsClient.Model.Enum.BanStatus.OUT;
+                            else if (row.GetInt32(0) == receiver)
+                                return EdcsClient.Model.Enum.BanStatus.IN;
+                        }
+                    }
+                    else
+                        return EdcsClient.Model.Enum.BanStatus.NONE;
+                }
+            }
+            return EdcsClient.Model.Enum.BanStatus.NONE;
+        }
+        public bool UpdateBan(int sender, int receiver)
+        {
+            using (var conn = new NpgsqlConnection(_connString))
+            {
+                conn.Open();
+
+                bool isBan = false;
+                string ban = String.Empty;
+                string checkBan = @"SELECT * FROM ban WHERE user_id = @from AND ban_user_id = @to";
+
+                using (var cmd = new NpgsqlCommand(checkBan, conn))
+                {
+                    cmd.Parameters.AddWithValue("from", sender);
+                    cmd.Parameters.AddWithValue("to", receiver);
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        if (reader.HasRows)
+                            while (reader.Read())
+                                isBan = true;
+                    }
+                }
+
+                if (isBan == true)
+                    ban = @"DELETE FROM public.ban WHERE user_id = @from AND ban_user_id = @to";
+                else
+                    ban = @"INSERT INTO public.ban (user_id, ban_user_id) VALUES (@from, @to)";
+
+                using (var cmd = new NpgsqlCommand(ban, conn))
+                {
+                    cmd.Parameters.AddWithValue("from", sender);
+                    cmd.Parameters.AddWithValue("to", receiver);
+
+                    var row = cmd.ExecuteNonQuery();
+                    if (row == 1)
+                        return true;
+                    else
+                        return false;
+                }
+
+            }
         }
     }
 }

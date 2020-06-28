@@ -41,6 +41,7 @@ namespace EdcsClient
                 if (_auth.Authenticate(ref user) == true)
                 {
                     IsAuthenticated = true;
+                    MainWindow.CurrentUser = user;
                     this.DialogResult = true;
                     this.Close();
                 }

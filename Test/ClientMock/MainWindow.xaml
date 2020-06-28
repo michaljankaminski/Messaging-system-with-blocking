@@ -19,7 +19,9 @@
                     <DropShadowEffect BlurRadius="30" ShadowDepth="1"/>
                 </StackPanel.Effect>
                 <Border Width="10" Height="10" HorizontalAlignment="Right" Margin="15" Background="Green" CornerRadius="15" VerticalAlignment="Center"/>
-                <TextBlock Text="John Doe" FontSize="28" VerticalAlignment="Center"/>
+                <TextBlock Text="" x:Name="ThreadHeader" FontSize="28" VerticalAlignment="Center"/>
+                <Button HorizontalAlignment="Right" Margin="10 0 0 0" Content="Bun/Unban" Click="BanUserEvent"></Button>
+
 
             </StackPanel>
             <!---->
@@ -105,7 +107,7 @@
                                 </Border.Style>
                             </Border>
                             <StackPanel Grid.Column="1">
-                                <TextBlock Text="{Binding Name}" Margin="10 0"/>
+                                <TextBlock Text="{Binding Name}" Margin="10 0" />
                             </StackPanel>
                         </Grid>
                     </DataTemplate>

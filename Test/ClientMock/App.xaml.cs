@@ -3,7 +3,6 @@ using EdcsClient.Service;
 using EdcsClient.Helper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using System;
 using System.IO;
 using System.Windows;
@@ -35,6 +34,7 @@ namespace EdcsClient
             var loginWindow = ServiceProvider.GetRequiredService<Login>();
             if (loginWindow.ShowDialog() == true)
             {
+                mainWindow.InitializeUi();
                 mainWindow.ShowDialog();
             }
 
