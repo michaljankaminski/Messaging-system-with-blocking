@@ -1,0 +1,21 @@
+﻿<Window x:Class="EdcsClient.Login"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:EdcsClient"
+        mc:Ignorable="d"
+        Title="Login" Height="225" Width="260">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="2*"></RowDefinition>
+        </Grid.RowDefinitions>
+
+        <Button Content="Login" VerticalAlignment="Bottom" Grid.Row="2" Click="LoginEvent" />
+        <TextBox Height="23" Text="Provide login" Width="180" Grid.Row="0" GotFocus="ClearFieldEvent" x:Name="userLogin"/>
+        <TextBox Height="23" Text="Provide password" Width="180" Grid.Row="1" GotFocus="ClearFieldEvent" x:Name="userPassword"/>
+
+    </Grid>
+</Window>

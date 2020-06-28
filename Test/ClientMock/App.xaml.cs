@@ -1,14 +1,10 @@
 ﻿using EdcsClient.Model;
 using EdcsClient.Service;
+using EdcsClient.Helper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace EdcsClient
@@ -33,16 +29,25 @@ namespace EdcsClient
             ConfigureServices(serviceCollection);
 
             ServiceProvider = serviceCollection.BuildServiceProvider();
-
             var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
-            mainWindow.Show();
+
+            var loginWindow = ServiceProvider.GetRequiredService<Login>();
+            if (loginWindow.ShowDialog() == true)
+            {
+                mainWindow.InitializeUi();
+                mainWindow.Listen();
+                mainWindow.ShowDialog();
+            }
+
         }
         private void ConfigureServices(IServiceCollection services)
         {
             services.Configure<Settings>(Configuration.GetSection(nameof(Settings)));
-
+            services.AddTransient<IAuthenticationHelper, AuthenticationHelper>();
+            services.AddScoped<IDbService, DbService>();
             services.AddSingleton<IRabbitService, RabbitService>();
             services.AddTransient(typeof(MainWindow));
+            services.AddTransient(typeof(Login));
         }
 
     }
