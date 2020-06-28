@@ -13,6 +13,7 @@ using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
+using System.Windows;
 
 namespace EdcsClient.Service
 {
@@ -124,11 +125,22 @@ namespace EdcsClient.Service
         }
         private void Listen()
         {
-            _channel.BasicConsume(
-                     queue: $"user-{_config.Value.User.Id}",
-                     autoAck: true,
-                     consumer: userConsumer
-                     );
+            try
+            {
+                _channel.BasicConsume(
+                    queue: $"user-{_config.Value.User.Id}",
+                    autoAck: true,
+                    consumer: userConsumer
+                    );
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                MessageBox.Show("I am not able to connect to a server now. Please try later!", 
+                    "Connection error", 
+                    MessageBoxButton.OK, 
+                    MessageBoxImage.Error);
+            }
         }
         public Message GetLastMessage()
         {

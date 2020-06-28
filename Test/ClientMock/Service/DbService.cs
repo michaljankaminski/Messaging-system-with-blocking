@@ -11,6 +11,7 @@ namespace EdcsClient.Service
 {
     public interface IDbService
     {
+        public User GetUser(string login, string password);
         public IEnumerable<User> GetUsers(int userId);
         public ObservableCollection<Message> GetThread(int from, int to);
         public IList<Message> GetThread(int threadId);
@@ -22,6 +23,31 @@ namespace EdcsClient.Service
         public DbService(IOptions<Settings> config)
         {
             _connString = config.Value.Postgres.ConnectionString;
+        }
+        public User GetUser(string login, string password)
+        {
+            using (var conn = new NpgsqlConnection(_connString))
+            {
+                conn.Open();
+                var getUsers = @"SELECT id, login FROM public.user 
+                                WHERE login = @login AND password = @password";
+
+                using (var cmd = new NpgsqlCommand(getUsers, conn))
+                {
+                    cmd.Parameters.AddWithValue("login", login);
+                    cmd.Parameters.AddWithValue("password", password);
+
+                    var row = cmd.ExecuteReader();
+                    while (row.Read())
+                        return new User
+                        {
+                            Id = row.GetInt32(0),
+                            Name = row.GetString(1)
+                        };
+                }
+            }
+
+            return null;
         }
         public IEnumerable<User> GetUsers(int userId)
         {
@@ -109,7 +135,6 @@ namespace EdcsClient.Service
                 }
             }
         }
-
         public IList<Message> GetThread(int threadId)
         {
             throw new NotImplementedException();

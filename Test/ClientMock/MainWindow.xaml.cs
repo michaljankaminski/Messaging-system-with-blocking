@@ -33,7 +33,6 @@ namespace EdcsClient
     {
         private readonly BackgroundWorker _worker = new BackgroundWorker();
 
-        private static User CurrentUser;
         private static ObservableCollection<Message> CurrentThread;
         private static IEnumerable<User> Contacts;
 
@@ -56,12 +55,12 @@ namespace EdcsClient
         }
         private void InitializeUi()
         {
-            Contacts = _context.GetUsers(CurrentUser.Id);
+            Contacts = _context.GetUsers(Login.CurrentUser.Id);
             contactsList.ItemsSource = Contacts;
         }
         private void InitializeUser()
         {
-            CurrentUser = new User
+            Login.CurrentUser = new User
             {
                 Id = _config.Value.User.Id,
                 Name = _config.Value.User.Name,
@@ -77,7 +76,7 @@ namespace EdcsClient
         private void ChangeThreadEvent(object sender, RoutedEventArgs e)
         {
             var user = (User)(sender as ListView).SelectedItem;
-            CurrentThread = _context.GetThread(CurrentUser.Id, user.Id);
+            CurrentThread = _context.GetThread(Login.CurrentUser.Id, user.Id);
             ReloadThreadView();
         }
         private void ListenQueue(object sender, DoWorkEventArgs e)
@@ -110,7 +109,7 @@ namespace EdcsClient
             var msg = new Message
             {
                 Content = messageBox.Text,
-                Sender = CurrentUser.Id,
+                Sender = Login.CurrentUser.Id,
                 Receiver = 2,
                 CurrentUser = true,
                 Created = DateTime.Now,
