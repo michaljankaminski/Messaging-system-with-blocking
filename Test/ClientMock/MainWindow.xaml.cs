@@ -21,7 +21,7 @@ namespace EdcsClient
     {
         private readonly BackgroundWorker _worker = new BackgroundWorker();
 
-        private static ObservableCollection<Message> CurrentThread;
+        private ObservableCollection<Message> CurrentThread;
         public static User CurrentUser;
         private User Receiver;
         private static IEnumerable<User> Contacts;
@@ -40,6 +40,10 @@ namespace EdcsClient
 
             _worker.DoWork += ListenQueue;
             _worker.RunWorkerAsync();
+        }
+        public void Listen()
+        {
+            _rabbit.Listen();
         }
         public void InitializeUi()
         {
@@ -96,6 +100,7 @@ namespace EdcsClient
                         {
                             Dispatcher.Invoke(() =>
                             {
+                                msg.CurrentUser = false;
                                 CurrentThread.Add(msg);
                             });
                         }

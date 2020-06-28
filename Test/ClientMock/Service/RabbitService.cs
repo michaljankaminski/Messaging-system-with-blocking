@@ -22,6 +22,7 @@ namespace EdcsClient.Service
         void LogMessage(Message message);
         void SendMessageToUser(Message message);
         Message GetLastMessage();
+        void Listen();
     }
     public class RabbitService : IRabbitService
     {
@@ -55,7 +56,8 @@ namespace EdcsClient.Service
                 HostName = Host,
                 UserName = Username,
                 Password = Password,
-                Port = Convert.ToInt32(Port)
+                Port = Convert.ToInt32(Port),
+                AutomaticRecoveryEnabled = true
             };
             _connection = _factory.CreateConnection();
             _channel = _connection.CreateModel();
@@ -81,7 +83,6 @@ namespace EdcsClient.Service
                     LastResponse = responseModel;
                 }
             };
-            Listen();
         }
         private void ReceiveMessage(object model, BasicDeliverEventArgs ea)
         {
@@ -102,7 +103,7 @@ namespace EdcsClient.Service
             _channel.BasicPublish(
                 exchange: "users",
                 routingKey: $"user.{message.Receiver}",
-                basicProperties: props,
+                basicProperties: null,
                 body: messageBytes);
 
         }
@@ -123,15 +124,18 @@ namespace EdcsClient.Service
                 queue: _replyQueueName,
                 autoAck: true);
         }
-        private void Listen()
+        public void Listen()
         {
             try
             {
-                _channel.BasicConsume(
-                    queue: $"user-{_config.Value.User.Id}",
+                if(MainWindow.CurrentUser != null)
+                {
+                    _channel.BasicConsume(
+                    queue: $"user-{MainWindow.CurrentUser.Id}",
                     autoAck: true,
                     consumer: userConsumer
                     );
+                }
             }
             catch(Exception ex)
             {

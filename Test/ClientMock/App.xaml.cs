@@ -35,6 +35,7 @@ namespace EdcsClient
             if (loginWindow.ShowDialog() == true)
             {
                 mainWindow.InitializeUi();
+                mainWindow.Listen();
                 mainWindow.ShowDialog();
             }
 
