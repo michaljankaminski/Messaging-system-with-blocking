@@ -41,17 +41,27 @@ namespace EdcsServer.Service
             _dbService = dbService;
             _modelHelper = modelHelper;
 
+
             _factory = new ConnectionFactory()
             {
                 HostName = Host,
                 UserName = Username,
                 Password = Password,
-                Port = Convert.ToInt32(Port)
+                Port = Convert.ToInt32(Port),
+                AutomaticRecoveryEnabled = true
             };
             _connection = _factory.CreateConnection();
             _channel = _connection.CreateModel();
 
+            _connection.ConnectionShutdown += ConnectionDestroyedEvent;
+            _channel.ModelShutdown += ConnectionDestroyedEvent;
+
             StartListening();
+        }
+        private void ConnectionDestroyedEvent(object s, ShutdownEventArgs e)
+        {
+            Console.WriteLine("The connection to RabbitMQ was destroyed.");
+            Console.WriteLine("I m trying to reconnect");
         }
         private void ExchangeDeclare()
         {
